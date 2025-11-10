@@ -18,7 +18,8 @@
   }
   html,body{height:100%;margin:0}
   body{
-    background: linear-gradient(180deg,#000 0%, #1a1a1a 100%);
+    background: url('https://i.postimg.cc/YCfpFhCq/wp6970659-depressed-cute-computer-wallpapers.jpg') no-repeat center center fixed;
+    background-size: cover;
     color: var(--accent);
     display:flex;
     align-items:center;
@@ -46,12 +47,14 @@
     color:var(--muted);
     border:1px solid rgba(255,255,255,0.02);
     font-size:14px;
+    transition: all 0.2s ease;
   }
   .tab.active{
     background: rgba(255,255,255,0.08);
     color:var(--accent);
     box-shadow: 0 6px 18px rgba(0,0,0,0.5);
   }
+  .tab:hover{background: rgba(255,255,255,0.05);}
   .card{
     background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));
     padding:18px;
@@ -64,17 +67,21 @@
   .opt{
     background: rgba(255,255,255,0.02);
     padding:8px 10px;border-radius:8px;cursor:pointer;border:1px solid rgba(255,255,255,0.02);
-    min-width:110px;text-align:center;font-size:14px;color:var(--muted)
+    min-width:110px;text-align:center;font-size:14px;color:var(--muted);
+    transition: all 0.2s ease;
   }
+  .opt:hover{background: rgba(255,255,255,0.08);}
   .opt.selected{background: rgba(255,255,255,0.15); color:#ffffff; box-shadow:inset 0 1px 0 rgba(255,255,255,0.02)}
   .nav{display:flex;gap:8px;justify-content:space-between;align-items:center;margin-top:12px}
   .btn{
     background: linear-gradient(90deg,#000000,#333333);
     color:white;padding:10px 14px;border-radius:10px;border:none;cursor:pointer;font-weight:600;
+    transition: all 0.2s ease;
   }
+  .btn:hover{filter: brightness(1.2);}
   .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted)}
-  .progress{height:12px;background:rgba(255,255,255,0.03);border-radius:999px;overflow:hidden}
-  .progress > i{display:block;height:100%;background:linear-gradient(90deg,#ffffff,#aaaaaa);width:0%}
+  .progress{height:12px;background:rgba(255,255,255,0.03);border-radius:999px;overflow:hidden; margin-bottom:12px;}
+  .progress > i{display:block;height:100%;background:linear-gradient(90deg,#ffffff,#aaaaaa);width:0%; transition: width 0.3s ease;}
   .meta{display:flex;gap:12px;align-items:center;color:var(--muted);font-size:13px}
   .result{margin-top:14px;padding:12px;border-radius:10px;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));border:1px solid rgba(255,255,255,0.02);}
   .severity{font-weight:700}
@@ -87,6 +94,7 @@
     .nav{flex-direction:column; gap:8px; align-items:stretch}
   }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 <div class="container">
@@ -114,8 +122,8 @@
 </div>
 
 <script>
-/* ========== Bestehende Fragen ========== */
-const socialQuestions = [
+// =================== Deine Fragen bleiben unverändert ===================
+const socialQuestions =  [
   "Ich fühle mich nervös, wenn ich mit einer unbekannten Person sprechen muss.",
   "Ich vermeide es, in Gruppen zu sprechen, weil ich befürchte, mich zu blamieren.",
   "Bei sozialen Treffen habe ich Angst, im Mittelpunkt zu stehen.",
@@ -166,9 +174,8 @@ const socialQuestions = [
   "Ich fühle mich isoliert, obwohl ich in Gesellschaft bin.",
   "Ich befürchte, dass meine Nervosität auffällt und negativ bewertet wird.",
   "Ich habe das Gefühl, soziale Situationen zu vermeiden."
-];
-
-const depressionQuestions = [
+]; // hier kommen alle 50 Fragen wie in deinem File
+ const depressionQuestions = [
   "Ich habe oft das Gefühl, niedergeschlagen oder traurig zu sein.",
   "Ich habe weniger Interesse oder Freude an Dingen, die mir früher Spaß gemacht haben.",
   "Ich fühle mich energielos und müde, auch nach ausreichend Schlaf.",
@@ -221,8 +228,7 @@ const depressionQuestions = [
   "Ich habe Schwierigkeiten, Freude zu empfinden.",
   "Ich habe das Gefühl, mich selbst zu verlieren."
 ];
-
-const bodyQuestions = [
+ const bodyQuestions = [
   "Ich bin oft unzufrieden mit meinem Aussehen.",
   "Ich vergleiche meinen Körper regelmäßig mit anderen.",
   "Ich fühle mich unwohl, wenn ich mich im Spiegel sehe.",
@@ -276,8 +282,7 @@ const bodyQuestions = [
   "Ich habe das Gefühl, mein Körper ist unattraktiv.",
   "Ich denke oft, dass andere schöner sind."
 ];
-
-const mediaQuestions = [
+const mediaQuestions =  [
   "Ich verbringe viel Zeit auf sozialen Medien täglich.",
   "Ich fühle mich gestresst, wenn ich keine Social Media Updates sehe.",
   "Ich checke mein Handy oft, auch ohne Grund.",
@@ -329,7 +334,6 @@ const mediaQuestions = [
   "Ich fühle mich abhängig von Medien für Unterhaltung."
 ];
 
-/* ========== Tests-Konfiguration ========== */
 const tests = {
   social: { id:'social', name:'Social Anxiety Test', questions:socialQuestions },
   depress: { id:'depress', name:'Depression Test', questions:depressionQuestions },
@@ -345,7 +349,7 @@ let state = {
 
 const app = document.getElementById('app');
 
-/* ========== Render-Funktion ========== */
+// =================== Render-Funktion ===================
 function render(){
   const t = tests[state.currentTest];
   const qCount = t.questions.length;
@@ -393,57 +397,48 @@ function render(){
     <div id="result-area"></div>
   `;
 
-  // Optionen Event
   document.querySelectorAll('.opt').forEach(el=>{
-    el.addEventListener('click', ()=>{
-      const val = Number(el.dataset.val);
-      const qidx = Number(el.dataset.idx);
-      state.answers[state.currentTest][qidx] = val;
-      render();
-    });
-    el.addEventListener('keydown', e=>{
-      if(e.key==='Enter' || e.key===' '){ el.click(); e.preventDefault(); }
-    });
+    el.addEventListener('click', ()=>{ const val=Number(el.dataset.val); const qidx=Number(el.dataset.idx); state.answers[state.currentTest][qidx]=val; render(); });
+    el.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ el.click(); e.preventDefault(); }});
   });
-
   document.getElementById('prev').addEventListener('click', ()=>{ if(state.index>0) state.index--; render(); });
   if(document.getElementById('next')) document.getElementById('next').addEventListener('click', ()=>{ if(state.index<qCount-1) state.index++; render(); });
   if(document.getElementById('finish')) document.getElementById('finish').addEventListener('click', finishTest);
+  document.getElementById('reset').addEventListener('click', ()=>{ if(confirm('Test wirklich zurücksetzen? Alle Antworten werden gelöscht.')){ state.answers[state.currentTest]=new Array(qCount).fill(null); state.index=0; render(); } });
+  document.getElementById('auto-fill').addEventListener('click', ()=>{ state.answers[state.currentTest]=new Array(qCount).fill(0); state.index=0; render(); });
 
-  document.getElementById('reset').addEventListener('click', ()=>{
-    if(confirm('Test wirklich zurücksetzen? Alle Antworten werden gelöscht.')){
-      state.answers[state.currentTest] = new Array(qCount).fill(null);
-      state.index = 0; render();
-    }
-  });
-
-  document.getElementById('auto-fill').addEventListener('click', ()=>{
-    state.answers[state.currentTest] = new Array(qCount).fill(0);
-    state.index = 0; render();
-  });
-
-  // Zwischenscore
+  // Zwischenscore als Diagramm
   const filled = state.answers[state.currentTest].filter(a=>a!==null);
   const score = filled.reduce((s,a)=>s+(a||0),0);
   const maxPossible = qCount*3;
   const resultArea = document.getElementById('result-area');
-  resultArea.innerHTML = `
-    <div style="margin-top:12px" class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div>
-          <div style="font-weight:700">Zwischenscore</div>
-          <div class="subtitle">${score} von ${maxPossible} Punkten (${filled.length}/${qCount} beantwortet)</div>
-        </div>
-        <div style="text-align:right">
-          <div style="font-weight:700">Hinweis</div>
-          <div class="subtitle">Skaliere ehrlich — Auswertung basiert auf Gesamtpunktzahl.</div>
-        </div>
-      </div>
-    </div>
-  `;
+  resultArea.innerHTML = `<canvas id="scoreChart" style="margin-top:12px"></canvas>`;
+
+  const ctx = document.getElementById('scoreChart').getContext('2d');
+new Chart(ctx,{
+  type:'bar',
+  data:{
+    labels:['Erreichte Punkte','Maximale Punkte'],
+    datasets:[{
+      label:'Punkte',
+      data:[score,maxPossible],
+      backgroundColor:['#4da6ff','#555'],
+      borderRadius:6
+    }]
+  },
+  options:{
+    responsive:true,
+    animation:false, // Animation deaktiviert
+    scales:{
+      y:{beginAtZero:true,max:maxPossible}
+    },
+    plugins:{legend:{display:false}}
+  }
+});
 }
 
-/* Tabs */
+
+// Tabs
 document.querySelectorAll('.tab').forEach(el=>{
   el.addEventListener('click', ()=>{
     document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
@@ -454,7 +449,7 @@ document.querySelectorAll('.tab').forEach(el=>{
   });
 });
 
-/* Auswertung */
+// Auswertung
 function finishTest(){
   const t = tests[state.currentTest];
   const answers = state.answers[state.currentTest];
@@ -464,9 +459,7 @@ function finishTest(){
   const score = answers.map(a=>a===null?0:a).reduce((s,a)=>s+a,0);
   const max = answers.length*3;
 
-  let severityText = '';
-  let advice = '';
-
+  let severityText = '', advice = '';
   switch(state.currentTest){
     case 'social':
       if(score<=20){ severityText='Keine bis sehr geringe soziale Angst'; advice='Weiter beobachten.'; }
@@ -507,48 +500,33 @@ function finishTest(){
     '<a href="https://www.psychiater.de" target="_blank">Psychologische Beratungsstellen</a>'
   ];
 
-  app.innerHTML=`
-    <div style="display:flex;flex-wrap:wrap;gap:12px">
-      <div style="flex:1;min-width:320px" class="card">
-        <div style="font-weight:800;font-size:16px">${t.name} — Ergebnis</div>
-        <div style="margin-top:8px;font-size:14px;color:var(--muted)">Punkte: <span style="font-weight:800">${score}</span> / ${max}</div>
-
-        <div class="result">
-          <div class="severity">${severityText}</div>
-          <div class="advice">${advice}</div>
-          <div style="margin-top:8px;color:var(--muted);font-size:13px">Konkrete Schritte:</div>
-          <ul style="color:var(--muted);margin-top:6px">${suggestions.map(s=>`<li>${s}</li>`).join('')}</ul>
-        </div>
-
-        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn" id="back-to-test">Zurück</button>
-          <button class="btn ghost" id="restart-test">Nochmals starten</button>
-        </div>
-
-        <div class="disclaimer">
-          <strong>Wichtig:</strong> Screening-Tool zur Selbsteinschätzung. Kein Diagnosetool.
-        </div>
+  app.innerHTML=`<div style="display:flex;flex-wrap:wrap;gap:12px">
+    <div style="flex:1;min-width:320px" class="card">
+      <div style="font-weight:800;font-size:16px">${t.name} — Ergebnis</div>
+      <div style="margin-top:8px;font-size:14px;color:var(--muted)">Punkte: <span style="font-weight:800">${score}</span> / ${max}</div>
+      <div class="result">
+        <div class="severity">${severityText}</div>
+        <div class="advice">${advice}</div>
+        <div style="margin-top:8px;color:var(--muted);font-size:13">Konkrete Schritte:</div>
+        <ul style="color:var(--muted);margin-top:6px">${suggestions.map(s=>`<li>${s}</li>`).join('')}</ul>
       </div>
-
-      <div style="min-width:320px;flex:1">
-        <div class="card">
-          <div style="font-weight:700">Ressourcen & Links</div>
-          <div style="margin-top:8px;color:var(--muted);font-size:13px">${resources.join('<br>')}</div>
-        </div>
+      <div style="margin-top:10px;padding:10px;border:1px solid var(--danger);background:rgba(255,0,0,0.1);border-radius:10px;font-weight:600;color:var(--danger)">
+        Akute Krise? Rufe sofort <a href="tel:112" style="color:var(--danger);text-decoration:underline">112</a> oder die <a href="https://www.telefonseelsorge.de" target="_blank" style="color:var(--danger);text-decoration:underline">Telefonseelsorge</a> an!
+      </div>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn" id="back-to-test">Zurück</button>
+        <button class="btn ghost" id="restart-test">Nochmals starten</button>
+      </div>
+      <div class="disclaimer">
+        <strong>Wichtig:</strong> Screening ersetzt keine professionelle Diagnose.
       </div>
     </div>
-  `;
+  </div>`;
 
   document.getElementById('back-to-test').addEventListener('click', ()=>{ state.index=0; render(); });
-  document.getElementById('restart-test').addEventListener('click', ()=>{
-    if(confirm('Test komplett zurücksetzen?')){
-      state.answers[state.currentTest] = new Array(answers.length).fill(null);
-      state.index=0; render();
-    } else { render(); }
-  });
+  document.getElementById('restart-test').addEventListener('click', ()=>{ state.answers[state.currentTest]=new Array(answers.length).fill(null); state.index=0; render(); });
 }
 
-/* Initial render */
 render();
 </script>
 </body>
