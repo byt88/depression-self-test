@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Selfscreen — Mental Health Tests</title>
+<style>
+  :root{
+    --bg:#121212;
+    --card:#1e1e1e;
+    --accent:#ffffff;
+    --muted:#aaaaaa;
+    --glass: rgba(255,255,255,0.05);
+    --danger:#ff4d4d;
+    --ok:#4da6ff;
+    --radius:12px;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  }
+  html,body{height:100%;margin:0}
+  body{
+    background: linear-gradient(180deg,#000 0%, #1a1a1a 100%);
+    color: var(--accent);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:28px;
+  }
+  .container{
+    width:100%;
+    max-width:980px;
+    background: var(--card);
+    border-radius:20px;
+    padding:20px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+  header{display:flex;gap:16px;align-items:center;margin-bottom:8px}
+  h1{margin:0;font-size:20px}
+  .subtitle{color:var(--muted);font-size:13px}
+  .tabs{display:flex;gap:8px;margin:18px 0 12px;flex-wrap:wrap}
+  .tab{
+    background:var(--glass);
+    padding:10px 14px;
+    border-radius:10px;
+    cursor:pointer;
+    color:var(--muted);
+    border:1px solid rgba(255,255,255,0.02);
+    font-size:14px;
+  }
+  .tab.active{
+    background: rgba(255,255,255,0.08);
+    color:var(--accent);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+  }
+  .card{
+    background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));
+    padding:18px;
+    border-radius:var(--radius);
+    border:1px solid rgba(255,255,255,0.02);
+  }
+  .question{margin-bottom:18px}
+  .qtext{font-weight:600;margin-bottom:8px}
+  .options{display:flex;gap:8px;flex-wrap:wrap}
+  .opt{
+    background: rgba(255,255,255,0.02);
+    padding:8px 10px;border-radius:8px;cursor:pointer;border:1px solid rgba(255,255,255,0.02);
+    min-width:110px;text-align:center;font-size:14px;color:var(--muted)
+  }
+  .opt.selected{background: rgba(255,255,255,0.15); color:#ffffff; box-shadow:inset 0 1px 0 rgba(255,255,255,0.02)}
+  .nav{display:flex;gap:8px;justify-content:space-between;align-items:center;margin-top:12px}
+  .btn{
+    background: linear-gradient(90deg,#000000,#333333);
+    color:white;padding:10px 14px;border-radius:10px;border:none;cursor:pointer;font-weight:600;
+  }
+  .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted)}
+  .progress{height:12px;background:rgba(255,255,255,0.03);border-radius:999px;overflow:hidden}
+  .progress > i{display:block;height:100%;background:linear-gradient(90deg,#ffffff,#aaaaaa);width:0%}
+  .meta{display:flex;gap:12px;align-items:center;color:var(--muted);font-size:13px}
+  .result{margin-top:14px;padding:12px;border-radius:10px;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));border:1px solid rgba(255,255,255,0.02);}
+  .severity{font-weight:700}
+  .advice{margin-top:8px;color:var(--muted);font-size:14px}
+  .disclaimer{margin-top:12px;color:#a0b0c5;font-size:13px}
+  footer{margin-top:14px;display:flex;justify-content:space-between;align-items:center}
+  @media (max-width:720px){
+    .options{flex-direction:column}
+    .opt{min-width:unset;width:100%}
+    .nav{flex-direction:column; gap:8px; align-items:stretch}
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div>
+      <h1>Selfscreen — Mental Health Tests</h1>
+      <div class="subtitle">50 Fragen pro Test · anonyme Selbsteinschätzung · kein Ersatz für Therapie</div>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <div class="tab active" data-test="social">Social Anxiety</div>
+    <div class="tab" data-test="depress">Depression</div>
+    <div class="tab" data-test="body">Body Dysmorphia</div>
+    <div class="tab" data-test="media">Mediensucht</div>
+  </div>
+
+  <div id="app" class="card"></div>
+
+  <footer>
+    <div class="subtitle">Made for personal use — bei akuter Krise ruf bitte sofort professionelle Hilfe.</div>
+    <div style="color:var(--muted);font-size:13px">Skala: Nie(0) · Selten(1) · Manchmal(2) · Oft(3)</div>
+    <div style="margin-top:8px;font-size:12px;color:var(--muted)">© Byt Studios</div>
+  </footer>
+</div>
+
+<script>
+/* ========== Bestehende Fragen ========== */
+const socialQuestions = [
+  "Ich fühle mich nervös, wenn ich mit einer unbekannten Person sprechen muss.",
+  "Ich vermeide es, in Gruppen zu sprechen, weil ich befürchte, mich zu blamieren.",
+  "Bei sozialen Treffen habe ich Angst, im Mittelpunkt zu stehen.",
+  "Ich vermeide Partys oder Treffen, weil ich mich unwohl fühle.",
+  "Ich mache mir Sorgen, dass andere mich negativ bewerten.",
+  "Ich zögere, meine Meinung in einer Gruppe zu äußern.",
+  "Ich habe Angst, vor anderen zu essen oder zu trinken.",
+  "Ich fühle mich nervös, wenn ich jemanden um einen Gefallen bitten muss.",
+  "Bei Gesprächen mit Autoritätspersonen (Lehrer/Chef) bin ich angespannt.",
+  "Ich bin besorgt, dass ich stottern oder rot werden könnte.",
+  "Der Gedanke an ein Vorstellungsgespräch macht mich sehr nervös.",
+  "Ich vermeide Augenkontakt, weil ich unsicher bin.",
+  "Ich befürchte, etwas Dummes zu sagen und ausgelacht zu werden.",
+  "Nach sozialen Situationen grüble ich oft über Fehler oder peinliche Momente nach.",
+  "Ich meide Situationen, in denen ich eine Rede halten müsste.",
+  "Ich fühle mich unwohl, wenn ich Komplimente bekomme.",
+  "Ich vermeide Smalltalk, weil ich Angst habe, nicht interessant zu sein.",
+  "Ich habe Angst vor Verabredungen oder romantischen Situationen.",
+  "Ich empfinde körperliche Symptome (Herzrasen, Schwitzen) in sozialen Situationen.",
+  "Ich sage oft 'nein', selbst wenn ich teilnehmen möchte, aus Angst.",
+  "Ich befürchte, dass Leute mich beurteilen, wenn ich Hilfe brauche.",
+  "Ich habe Angst, mich in Gruppen zu blamieren.",
+  "Ich vermeide Diskussionen, weil ich Angst vor Widerspruch habe.",
+  "Ich fühle mich nervös, wenn ich neue Leute kennenlernen soll.",
+  "Ich vermeide Vorträge oder Präsentationen um jeden Preis.",
+  "Ich denke, andere merken sofort, wenn ich nervös bin.",
+  "Ich habe Probleme, Gespräche zu beginnen.",
+  "Ich denke oft, ich würde in sozialen Situationen negativ auffallen.",
+  "Ich fühle mich unsicher, wenn ich in einer Gruppe etwas sagen soll.",
+  "Ich vermeide das Telefonieren, weil ich mich unwohl fühle.",
+  "Ich befürchte, dass mich Menschen ablehnen werden.",
+  "Ich zögere, jemanden nach einem Date oder Treffen zu fragen.",
+  "Ich fühle mich überwältigt bei großen Menschenmengen.",
+  "Ich vermeide Blickkontakt aus Angst, beurteilt zu werden.",
+  "Ich mache mir Sorgen, wie mein Verhalten auf andere wirkt.",
+  "Ich fühle mich unsicher, wenn ich mengenrabatte oder Angebote in Geschäften verhandle.",
+  "Ich glaube, andere beobachten mich besonders genau.",
+  "Ich fürchte, in sozialen Situationen zu erröten.",
+  "Ich vermeide es, meine Fähigkeiten in Gegenwart anderer vorzuführen.",
+  "Ich habe Lampenfieber, auch bei kleinen Gruppen.",
+  "Ich halte mich oft zurück, aus Angst, uninteressant zu wirken.",
+  "Ich verzichte auf Freizeitaktivitäten wegen sozialer Angst.",
+  "Ich fürchte, dass meine Stimme unsicher oder belegt klingt.",
+  "Ich habe Schwierigkeiten, flirty oder spielerische Signale zu senden.",
+  "Ich denke, ich wirke ungeschickt in sozialen Interaktionen.",
+  "Ich fürchte, ungeeignete Fragen zu stellen und ausgelacht zu werden.",
+  "Ich meide Orte, an denen ich viele Leute treffen könnte.",
+  "Ich fühle mich isoliert, obwohl ich in Gesellschaft bin.",
+  "Ich befürchte, dass meine Nervosität auffällt und negativ bewertet wird.",
+  "Ich habe das Gefühl, soziale Situationen zu vermeiden."
+];
+
+const depressionQuestions = [
+  "Ich habe oft das Gefühl, niedergeschlagen oder traurig zu sein.",
+  "Ich habe weniger Interesse oder Freude an Dingen, die mir früher Spaß gemacht haben.",
+  "Ich fühle mich energielos und müde, auch nach ausreichend Schlaf.",
+  "Ich finde es schwer, mich zu konzentrieren.",
+  "Ich habe das Gefühl, wertlos oder übermäßig schuldig zu sein.",
+  "Ich schlafe mehr oder weniger als üblich.",
+  "Ich habe Veränderungen im Appetit (mehr oder weniger) bemerkt.",
+  "Ich habe Schwierigkeiten, Entscheidungen zu treffen.",
+  "Ich ziehe mich von Freunden und Familie zurück.",
+  "Ich habe das Gefühl, dass nichts einen Sinn hat.",
+  "Ich bin schnell reizbar oder habe Stimmungsschwankungen.",
+  "Ich habe Probleme, alltägliche Aufgaben zu bewältigen.",
+  "Ich fühle mich oft hoffnungslos bezüglich der Zukunft.",
+  "Ich habe häufiger negative Gedanken über mich selbst.",
+  "Ich habe körperliche Beschwerden ohne klare Ursache (Kopfschmerzen, Rückenschmerzen).",
+  "Ich habe weniger Interesse an sexuellen Aktivitäten.",
+  "Ich finde es schwer, morgens aufzustehen.",
+  "Ich vernachlässige gepflegte Gewohnheiten oder Hobbys.",
+  "Ich denke viel über vergangene Fehler nach.",
+  "Ich habe das Gefühl, dass meine Gedanken langsamer oder blockiert sind.",
+  "Ich habe verzögerte Reaktionen oder empfinde einen inneren Stillstand.",
+  "Ich fühle mich oft beschämt oder minderwertig.",
+  "Ich vermeide Entscheidungen, weil ich Angst habe, falsch zu liegen.",
+  "Ich habe Schwierigkeiten, Emotionen zu regulieren.",
+  "Ich fühle mich von Zukunftsplanung überfordert.",
+  "Ich habe ein geringeres Interesse an sozialen Aktivitäten.",
+  "Ich nehme negative Ereignisse stärker persönlich.",
+  "Ich habe plötzliche Stimmungseinbrüche.",
+  "Ich habe das Gefühl, dass ich anderen zur Last falle.",
+  "Ich merke, dass ich öfter weine oder Tränen nahe bin.",
+  "Ich habe das Gefühl, langsamer zu denken oder zu handeln.",
+  "Ich habe Schwierigkeiten, positive Erlebnisse zu genießen.",
+  "Ich tendiere zu schwarz-weiß-Denken (alles schlecht oder alles gut).",
+  "Ich habe das Gefühl, dass meine Motivation stark abgenommen hat.",
+  "Ich vernachlässige meine Arbeit/Schule wegen Antriebslosigkeit.",
+  "Ich fühle mich oft leer oder innerlich abgestumpft.",
+  "Ich habe Gedanken, dass das Leben nicht lebenswert ist.",
+  "Ich habe Probleme, mich für Verabredungen oder Treffen aufzuraffen.",
+  "Ich verspüre häufiger Angst in Verbindung mit Niedergeschlagenheit.",
+  "Ich habe das Gefühl, meine Gefühle sind überwältigend.",
+  "Ich nehme mir weniger Zeit für Selbstfürsorge.",
+  "Ich fühle mich schneller überfordert als früher.",
+  "Ich stelle mir häufig vor, wie es wäre, wenn alles anders wäre (Fluchtgedanken).",
+  "Ich habe das Gefühl, dass meine Situation sich nicht verbessern wird.",
+  "Ich bemerke, dass ich öfter als früher zurückgezogen reagiere.",
+  "Ich habe Schwierigkeiten, positive Rückmeldungen zu glauben.",
+  "Ich fühle mich oft geistig müde, auch ohne körperliche Anstrengung.",
+  "Ich habe deaktivierende Grübeleien über meine Zukunft.",
+  "Ich empfinde innere Leere in sozialen Situationen.",
+  "Ich habe Schwierigkeiten, Freude zu empfinden.",
+  "Ich habe das Gefühl, mich selbst zu verlieren."
+];
+
+const bodyQuestions = [
+  "Ich bin oft unzufrieden mit meinem Aussehen.",
+  "Ich vergleiche meinen Körper regelmäßig mit anderen.",
+  "Ich fühle mich unwohl, wenn ich mich im Spiegel sehe.",
+  "Ich denke oft über vermeintliche Makel nach.",
+  "Ich vermeide Fotos oder Spiegel wegen meines Aussehens.",
+  "Ich habe Angst vor negativer Bewertung meines Körpers.",
+  "Ich kontrolliere regelmäßig mein Aussehen (Frisur, Haut, Kleidung).",
+  "Ich fühle mich unattraktiv, auch wenn andere das nicht sagen.",
+  "Ich vergleiche Gewicht oder Figur mit Prominenten oder Social Media.",
+  "Ich fühle mich schuldig, wenn ich bestimmte Nahrungsmittel esse.",
+  "Ich vermeide bestimmte soziale Situationen wegen meines Körpers.",
+  "Ich trainiere exzessiv, um mein Aussehen zu ändern.",
+  "Ich fühle mich unsicher in enger Kleidung.",
+  "Ich habe Schwierigkeiten, Komplimente zum Aussehen anzunehmen.",
+  "Ich denke, andere bemerken sofort meine vermeintlichen Makel.",
+  "Ich verbringe viel Zeit vor dem Spiegel.",
+  "Ich fühle mich gestresst durch meinen Körper in der Öffentlichkeit.",
+  "Ich habe Angst, dass andere meine Makel kommentieren.",
+  "Ich fühle mich häufig unwohl nackt oder in Unterwäsche.",
+  "Ich denke über chirurgische Eingriffe nach, um mich zu verbessern.",
+  "Ich ziehe Kleidung an, um Makel zu verstecken.",
+  "Ich meide Sport oder Freizeitaktivitäten, weil ich mich beobachtet fühle.",
+  "Ich vergleiche oft Gesichtszüge mit anderen.",
+  "Ich fühle mich unzulänglich in intimen Situationen.",
+  "Ich verbringe viel Zeit online, um Körperideale zu sehen.",
+  "Ich kritisiere mein Aussehen stark im Geiste.",
+  "Ich glaube, dass mein Aussehen meinen sozialen Erfolg beeinflusst.",
+  "Ich fühle mich manchmal gezwungen, Diäten zu machen.",
+  "Ich habe das Gefühl, andere beurteilen meinen Körper ständig.",
+  "Ich verstecke Körperbereiche, die ich nicht mag.",
+  "Ich fühle mich unwohl bei Komplimenten über meinen Körper.",
+  "Ich überprüfe regelmäßig mein Gewicht.",
+  "Ich vergleiche Haut, Haare oder Nägel mit anderen.",
+  "Ich fühle mich oft peinlich berührt wegen meines Aussehens.",
+  "Ich denke, dass kleine Makel andere stark stören.",
+  "Ich verbringe Zeit, Bilder von mir zu retuschieren.",
+  "Ich fühle mich unwohl bei neuen sozialen Kontakten wegen meines Körpers.",
+  "Ich habe Angst, dass andere über mich lachen, wegen Aussehen.",
+  "Ich übe Kritik an meinem Körper selbst aus.",
+  "Ich meide Spiegel oder Fotos, um Stress zu vermeiden.",
+  "Ich fühle mich nie vollkommen zufrieden mit meinem Aussehen.",
+  "Ich denke, dass mein Wert von meinem Körper abhängt.",
+  "Ich habe Angst, dass andere meine „Fehler“ bemerken.",
+  "Ich verbringe viel Zeit mit Diäten oder Essensplanung.",
+  "Ich fühle mich gestresst, wenn ich meinen Körper anderen zeige.",
+  "Ich meide Umkleiden oder Fitnessräume.",
+  "Ich denke, dass mein Körper nie gut genug ist.",
+  "Ich vergleiche mich täglich mit sozialen Medien Bildern.",
+  "Ich kritisiere mich stark nach Spiegelkontrolle.",
+  "Ich fühle mich unwohl, wenn ich mein Gesicht sehe.",
+  "Ich habe das Gefühl, mein Körper ist unattraktiv.",
+  "Ich denke oft, dass andere schöner sind."
+];
+
+const mediaQuestions = [
+  "Ich verbringe viel Zeit auf sozialen Medien täglich.",
+  "Ich fühle mich gestresst, wenn ich keine Social Media Updates sehe.",
+  "Ich checke mein Handy oft, auch ohne Grund.",
+  "Ich vernachlässige Schlaf, um online zu sein.",
+  "Ich vergleiche mich ständig mit anderen online.",
+  "Ich fühle mich unruhig ohne Internetzugang.",
+  "Ich habe Schwierigkeiten, Offline-Zeit einzuplanen.",
+  "Ich ignoriere wichtige Aufgaben zugunsten von Mediennutzung.",
+  "Ich fühle mich schlecht, wenn ich online weniger Likes erhalte.",
+  "Ich kontrolliere ständig Nachrichten und Kommentare.",
+  "Ich vernachlässige Hobbys wegen Mediennutzung.",
+  "Ich verspüre Schuldgefühle für zu viel Bildschirmzeit.",
+  "Ich fühle mich abhängig von Streaming-Plattformen.",
+  "Ich habe Schwierigkeiten, offline mit Freunden zu sprechen.",
+  "Ich verbringe Stunden mit Videospielen oder Serien.",
+  "Ich fühle mich leer nach längerem Social Media Konsum.",
+  "Ich habe oft das Bedürfnis, online präsent zu sein.",
+  "Ich fühle mich gestresst durch ständige Benachrichtigungen.",
+  "Ich verliere Zeit, ohne es zu merken, beim Scrollen.",
+  "Ich habe Angst, etwas Wichtiges online zu verpassen.",
+  "Ich checke mein Handy sofort nach Aufwachen.",
+  "Ich fühle mich gereizt ohne Medienzugang.",
+  "Ich überspringe Mahlzeiten wegen Mediennutzung.",
+  "Ich fühle mich isoliert, wenn ich offline bin.",
+  "Ich vernachlässige reale Kontakte.",
+  "Ich priorisiere Online-Interaktionen über echte Beziehungen.",
+  "Ich fühle mich einsam ohne Social Media.",
+  "Ich habe Schwierigkeiten, Medienzeit zu reduzieren.",
+  "Ich fühle mich niedergeschlagen nach Online-Interaktionen.",
+  "Ich habe Angst, dass mein Online-Image negativ wahrgenommen wird.",
+  "Ich verbringe zu viel Zeit mit Streaming-Plattformen.",
+  "Ich fühle mich unruhig, wenn ich mein Handy verliere.",
+  "Ich habe Schwierigkeiten, offline zu entspannen.",
+  "Ich ignoriere Anrufe oder Nachrichten wegen Online-Aktivität.",
+  "Ich fühle mich gestresst von ständigen Updates.",
+  "Ich verbringe viel Zeit auf Foren oder Communitys.",
+  "Ich fühle mich müde nach stundenlanger Mediennutzung.",
+  "Ich fühle mich schuldig wegen Online-Abhängigkeit.",
+  "Ich ignoriere Termine zugunsten Mediennutzung.",
+  "Ich fühle mich gezwungen, ständig online zu sein.",
+  "Ich verliere den Überblick über Zeit bei Mediennutzung.",
+  "Ich fühle mich unproduktiv durch zu viel Online-Zeit.",
+  "Ich priorisiere Online-Inhalte über reale Aufgaben.",
+  "Ich fühle mich gestresst von Online-Kommunikation.",
+  "Ich habe Schwierigkeiten, offline zu schlafen.",
+  "Ich habe Angst, von Freunden online ignoriert zu werden.",
+  "Ich verbringe mehr Zeit online als geplant.",
+  "Ich fühle mich angespannt, wenn ich offline gehen muss.",
+  "Ich fühle mich abhängig von Medien für Unterhaltung."
+];
+
+/* ========== Tests-Konfiguration ========== */
+const tests = {
+  social: { id:'social', name:'Social Anxiety Test', questions:socialQuestions },
+  depress: { id:'depress', name:'Depression Test', questions:depressionQuestions },
+  body: { id:'body', name:'Body Dysmorphia Test', questions:bodyQuestions },
+  media: { id:'media', name:'Mediensucht Test', questions:mediaQuestions }
+};
+
+let state = {
+  currentTest: 'social',
+  index: 0,
+  answers: { social: new Array(50).fill(null), depress: new Array(50).fill(null), body:new Array(50).fill(null), media:new Array(50).fill(null) }
+};
+
+const app = document.getElementById('app');
+
+/* ========== Render-Funktion ========== */
+function render(){
+  const t = tests[state.currentTest];
+  const qCount = t.questions.length;
+  const idx = state.index;
+  const qText = t.questions[idx];
+  const chosen = state.answers[state.currentTest][idx];
+  const progressPct = Math.round(((state.answers[state.currentTest].filter(a=>a!==null).length)/qCount)*100);
+
+  app.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div>
+        <div style="font-size:15px;font-weight:700">${t.name}</div>
+        <div class="subtitle">Frage ${idx+1} von ${qCount}</div>
+      </div>
+      <div class="meta">
+        <div>Ausgefüllt: ${state.answers[state.currentTest].filter(a=>a!==null).length}/${qCount}</div>
+      </div>
+    </div>
+
+    <div class="progress" aria-hidden="true"><i style="width:${progressPct}%"></i></div>
+
+    <div class="question" style="margin-top:16px">
+      <div class="qtext">${qText}</div>
+      <div class="options" role="radiogroup" aria-label="Antworten">
+        ${['Nie','Selten','Manchmal','Oft'].map((label,i)=>`
+          <div class="opt ${chosen===i?'selected':''}" data-val="${i}" data-idx="${idx}" role="radio" tabindex="0" aria-checked="${chosen===i}">
+            <div style="opacity:0.9;font-weight:600">${label}</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:6px">${i} Punkte</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <div class="nav">
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn ghost" id="reset">Reset Test</button>
+        <button class="btn ghost" id="auto-fill">Alle überspringen (temporär)</button>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn ghost" id="prev" ${idx===0?'disabled':''}>Zurück</button>
+        ${idx<qCount-1?`<button class="btn" id="next">Weiter</button>`:`<button class="btn" id="finish">Auswertung</button>`}
+      </div>
+    </div>
+
+    <div id="result-area"></div>
+  `;
+
+  // Optionen Event
+  document.querySelectorAll('.opt').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const val = Number(el.dataset.val);
+      const qidx = Number(el.dataset.idx);
+      state.answers[state.currentTest][qidx] = val;
+      render();
+    });
+    el.addEventListener('keydown', e=>{
+      if(e.key==='Enter' || e.key===' '){ el.click(); e.preventDefault(); }
+    });
+  });
+
+  document.getElementById('prev').addEventListener('click', ()=>{ if(state.index>0) state.index--; render(); });
+  if(document.getElementById('next')) document.getElementById('next').addEventListener('click', ()=>{ if(state.index<qCount-1) state.index++; render(); });
+  if(document.getElementById('finish')) document.getElementById('finish').addEventListener('click', finishTest);
+
+  document.getElementById('reset').addEventListener('click', ()=>{
+    if(confirm('Test wirklich zurücksetzen? Alle Antworten werden gelöscht.')){
+      state.answers[state.currentTest] = new Array(qCount).fill(null);
+      state.index = 0; render();
+    }
+  });
+
+  document.getElementById('auto-fill').addEventListener('click', ()=>{
+    state.answers[state.currentTest] = new Array(qCount).fill(0);
+    state.index = 0; render();
+  });
+
+  // Zwischenscore
+  const filled = state.answers[state.currentTest].filter(a=>a!==null);
+  const score = filled.reduce((s,a)=>s+(a||0),0);
+  const maxPossible = qCount*3;
+  const resultArea = document.getElementById('result-area');
+  resultArea.innerHTML = `
+    <div style="margin-top:12px" class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-weight:700">Zwischenscore</div>
+          <div class="subtitle">${score} von ${maxPossible} Punkten (${filled.length}/${qCount} beantwortet)</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-weight:700">Hinweis</div>
+          <div class="subtitle">Skaliere ehrlich — Auswertung basiert auf Gesamtpunktzahl.</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/* Tabs */
+document.querySelectorAll('.tab').forEach(el=>{
+  el.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    el.classList.add('active');
+    state.currentTest = el.dataset.test;
+    state.index = 0;
+    render();
+  });
+});
+
+/* Auswertung */
+function finishTest(){
+  const t = tests[state.currentTest];
+  const answers = state.answers[state.currentTest];
+  const missing = answers.filter(a=>a===null).length;
+  if(missing>0){ if(!confirm(`Du hast noch ${missing} Frage(n) nicht beantwortet. Auswerten?`)) return; }
+
+  const score = answers.map(a=>a===null?0:a).reduce((s,a)=>s+a,0);
+  const max = answers.length*3;
+
+  let severityText = '';
+  let advice = '';
+
+  switch(state.currentTest){
+    case 'social':
+      if(score<=20){ severityText='Keine bis sehr geringe soziale Angst'; advice='Weiter beobachten.'; }
+      else if(score<=50){ severityText='Leichte soziale Angst'; advice='Selbsthilfestrategien in Erwägung ziehen.'; }
+      else if(score<=100){ severityText='Mässige soziale Angst'; advice='Psychologische Beratung könnte helfen.'; }
+      else{ severityText='Schwere soziale Angst'; advice='Professionelle Hilfe dringend empfohlen.'; }
+      break;
+    case 'depress':
+      if(score<=24){ severityText='Keine bis sehr geringe depressive Symptome'; advice='Auf Selbstfürsorge achten.'; }
+      else if(score<=49){ severityText='Leichte depressive Symptome'; advice='Beobachten und ggf. professionelle Hilfe.'; }
+      else if(score<=99){ severityText='Mässige depressive Symptome'; advice='Psychotherapie oder ärztliche Abklärung sinnvoll.'; }
+      else{ severityText='Schwere depressive Symptome'; advice='Dringend therapeutische Abklärung empfohlen.'; }
+      break;
+    case 'body':
+      if(score<=25){ severityText='Geringe Anzeichen von Body Dysmorphia'; advice='Weiter beobachten.'; }
+      else if(score<=60){ severityText='Leichte Symptome'; advice='Selbstreflexion & Beratung erwägen.'; }
+      else if(score<=100){ severityText='Mässige Symptome'; advice='Psychologische Beratung sinnvoll.'; }
+      else{ severityText='Starke Symptome'; advice='Professionelle Hilfe dringend empfohlen.'; }
+      break;
+    case 'media':
+      if(score<=25){ severityText='Geringe Medienabhängigkeit'; advice='Weiter beobachten.'; }
+      else if(score<=60){ severityText='Leichte Symptome'; advice='Selbstkontrolle & digitale Pausen einplanen.'; }
+      else if(score<=100){ severityText='Mässige Abhängigkeit'; advice='Digitale Beratung oder Therapie sinnvoll.'; }
+      else{ severityText='Starke Abhängigkeit'; advice='Professionelle Hilfe dringend empfohlen.'; }
+      break;
+  }
+
+  const suggestions=[
+    'Sprich mit vertrauter Person über Gefühle.',
+    'Erwäge eine Beratungsstelle oder Hausarzt/Psychotherapeut:in.',
+    'Achte auf Schlaf, Bewegung, regelmäßige Mahlzeiten.',
+    'Bei akuten Suizidgedanken: Notruf/Telefonseelsorge anrufen.'
+  ];
+
+  const resources=[
+    '<a href="https://www.telefonseelsorge.de" target="_blank">Telefonseelsorge (DE)</a>',
+    '<a href="https://www.youtube.com/results?search_query=mental+health+tips" target="_blank">YouTube Mental Health Tipps</a>',
+    '<a href="https://www.psychiater.de" target="_blank">Psychologische Beratungsstellen</a>'
+  ];
+
+  app.innerHTML=`
+    <div style="display:flex;flex-wrap:wrap;gap:12px">
+      <div style="flex:1;min-width:320px" class="card">
+        <div style="font-weight:800;font-size:16px">${t.name} — Ergebnis</div>
+        <div style="margin-top:8px;font-size:14px;color:var(--muted)">Punkte: <span style="font-weight:800">${score}</span> / ${max}</div>
+
+        <div class="result">
+          <div class="severity">${severityText}</div>
+          <div class="advice">${advice}</div>
+          <div style="margin-top:8px;color:var(--muted);font-size:13px">Konkrete Schritte:</div>
+          <ul style="color:var(--muted);margin-top:6px">${suggestions.map(s=>`<li>${s}</li>`).join('')}</ul>
+        </div>
+
+        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn" id="back-to-test">Zurück</button>
+          <button class="btn ghost" id="restart-test">Nochmals starten</button>
+        </div>
+
+        <div class="disclaimer">
+          <strong>Wichtig:</strong> Screening-Tool zur Selbsteinschätzung. Kein Diagnosetool.
+        </div>
+      </div>
+
+      <div style="min-width:320px;flex:1">
+        <div class="card">
+          <div style="font-weight:700">Ressourcen & Links</div>
+          <div style="margin-top:8px;color:var(--muted);font-size:13px">${resources.join('<br>')}</div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('back-to-test').addEventListener('click', ()=>{ state.index=0; render(); });
+  document.getElementById('restart-test').addEventListener('click', ()=>{
+    if(confirm('Test komplett zurücksetzen?')){
+      state.answers[state.currentTest] = new Array(answers.length).fill(null);
+      state.index=0; render();
+    } else { render(); }
+  });
+}
+
+/* Initial render */
+render();
+</script>
+</body>
+</html>
